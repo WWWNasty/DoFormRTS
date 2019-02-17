@@ -2,6 +2,7 @@ import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 
+import java.io.FileWriter;
 import java.io.IOException;
 
 import static com.codeborne.selenide.Condition.*;
@@ -57,6 +58,18 @@ public class DataMining {
         String result = "Сумма всех закупок: " + tradeData.sum + " Кол-во закупок: " + tradeData.count;
 
         out.println(result);
+        writeResultToFile(result);
+    }
+
+    private static void writeResultToFile(String result) {
+        try (FileWriter writer = new FileWriter("result.txt", false)) {
+            writer.write(result);
+
+            writer.flush();
+        } catch (IOException ex) {
+
+            System.out.println(ex.getMessage());
+        }
     }
 
     private static boolean isButtonClickable(SelenideElement nextPageButton) {

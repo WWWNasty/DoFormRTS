@@ -3,6 +3,7 @@
   <component name="CompilerConfiguration">
     <bytecodeTargetLevel>
       <module name="solarltest.data-mining-case" target="1.8" />
+      <module name="solarltest.test" target="1.8" />
     </bytecodeTargetLevel>
   </component>
 </project>
