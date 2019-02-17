@@ -1,3 +1,4 @@
+import com.codeborne.selenide.Configuration;
 import com.codeborne.selenide.ElementsCollection;
 import com.codeborne.selenide.SelenideElement;
 
@@ -5,19 +6,33 @@ import java.io.IOException;
 
 import static com.codeborne.selenide.Condition.*;
 import static com.codeborne.selenide.Selenide.*;
+import static java.lang.System.err;
 import static java.lang.System.out;
 
 public class DataMining {
+
+    private static final int startingDateArgument = 0;
+    private static final int endDateArgument = 1;
 
     public static void main(String[] args) throws IOException, InterruptedException {
         System.setProperty("webdriver.chrome.driver",
                 "C:\\Users\\nasgr\\IdeaProjects\\SeleniumDrivers\\chromedriver_win32\\chromedriver.exe");
 
+        Configuration.timeout = 10000;
 
-        searchForTrades();
-        //Thread.sleep(4000); шуд би нажал на кнопку след страница1 следующая стр 1+1
+        if (args.length < 2) {
+            err.println("Укажите в качестве аргументов начальную и конечную дату публикации извещения " +
+                    "пример: program \"20.01.2018\" \"30.01.2018\"");
 
-        double sumOfPrices = 0;
+            return;
+        }
+
+        String startingDate = args[startingDateArgument];
+        String endDate = args[endDateArgument];
+
+        searchForTrades(startingDate, endDate);
+
+        TradeData tradeData = new TradeData();
 
         SelenideElement nextPageButton = $("#next_t_BaseMainContent_MainContent_jqgTrade_toppager");
 
@@ -28,10 +43,7 @@ public class DataMining {
         do {
             ElementsCollection tradeRows = $$("#BaseMainContent_MainContent_jqgTrade tr");
 
-            sumOfPrices += getSumOfPrices(tradeRows);
-
-
-            //TODO исправить если страниц всего одна
+            tradeData.update(tradeRows);
 
             if (isButtonClickable(nextPageButton)) {
                 nextPageButton.click();
@@ -42,11 +54,9 @@ public class DataMining {
             }
         } while (isButtonClickable(nextPageButton));
 
-        out.println(sumOfPrices);
+        String result = "Сумма всех закупок: " + tradeData.sum + " Кол-во закупок: " + tradeData.count;
 
-
-        //$(".tracking-card__history-status").shouldHave(text("Получено адресатом"));
-
+        out.println(result);
     }
 
     private static boolean isButtonClickable(SelenideElement nextPageButton) {
@@ -56,10 +66,10 @@ public class DataMining {
     /**
      * переходит по адресу устанавливает зрачения нажимает кнопку и ждет загрузки таблицы
      */
-    private static void searchForTrades() {
+    private static void searchForTrades(String startingDate, String endDate) {
         open("https://223.rts-tender.ru/supplier/auction/Trade/Search.aspx");
-        $("#BaseMainContent_MainContent_txtPublicationDate_txtDateFrom").setValue("01.01.2019");
-        $("#BaseMainContent_MainContent_txtPublicationDate_txtDateTo").setValue("01.01.2019");
+        $("#BaseMainContent_MainContent_txtPublicationDate_txtDateFrom").setValue(startingDate);
+        $("#BaseMainContent_MainContent_txtPublicationDate_txtDateTo").setValue(endDate);
 
         $("#BaseMainContent_MainContent_chkPurchaseType_1").setSelected(true);
         $("#BaseMainContent_MainContent_chkPurchaseType_0").setSelected(true);
@@ -69,32 +79,5 @@ public class DataMining {
         $(".ui-paging-info").shouldNotBe(empty);
     }
 
-    private static double getSumOfPrices(ElementsCollection tradeRows) {
-        double sumOfPrices = 0;
-
-        for (int i = 1; i < tradeRows.size(); i++) {
-            SelenideElement currentRow = tradeRows.get(i);
-            SelenideElement oosNumber = currentRow.$("[aria-describedby='BaseMainContent_MainContent_jqgTrade_OosNumber']");
-            // "[aria-describedby]='BaseMainContent_MainContent_jqgTrade_OosNumber'"));
-
-            String oosNumberText = oosNumber.getText();
-            if (!oosNumberText.trim().isEmpty()) {
-                String lotState = currentRow.$("[aria-describedby='BaseMainContent_MainContent_jqgTrade_LotStateString']").getText();
-                if (!lotState.trim().equals("Отменена")) {
-                    String priceText = currentRow.$("[aria-describedby='BaseMainContent_MainContent_jqgTrade_StartPrice']").getText();
-                    double lotPrice = parseLotPrice(priceText);
-                    sumOfPrices += lotPrice;
-                }
-            }
-        }
-        return sumOfPrices;
-    }
-
-    private static double parseLotPrice(String priceText) {
-        return Double.parseDouble(priceText.replace(" руб.", "")
-                .replace("EUR", "")
-                .replaceAll(" ", "")
-                .replace(',', '.'));
-    }
 
 }
